@@ -11,8 +11,10 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-// Load environment variables from .env file if present
-const envPath = path.join(__dirname, '.env');
+// Load environment variables from .env file if present (checks workspace root and backend folder)
+const rootEnv = path.join(__dirname, '..', '.env');
+const localEnv = path.join(__dirname, '.env');
+const envPath = fs.existsSync(rootEnv) ? rootEnv : localEnv;
 if (fs.existsSync(envPath)) {
   try {
     const envContent = fs.readFileSync(envPath, 'utf8');
@@ -97,8 +99,8 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve static frontend assets
-app.use(express.static(path.join(__dirname, 'public')));
+// Serve static frontend assets from frontend folder
+app.use(express.static(path.join(__dirname, '..', 'frontend')));
 
 // ==========================================
 // SESSION & AUTHENTICATION STATE

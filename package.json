@@ -2,10 +2,10 @@
   "name": "pressure-map",
   "version": "1.0.0",
   "description": "Privacy-first health reporting checker: Find Unfair Targets, Not Faulty Workers",
-  "main": "server.js",
+  "main": "backend/server.js",
   "scripts": {
-    "start": "node server.js",
-    "test": "node --test test/*.test.js"
+    "start": "node backend/server.js",
+    "test": "node --test backend/test/*.test.js"
   },
   "keywords": [
     "health",

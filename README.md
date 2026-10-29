@@ -51,7 +51,13 @@ Pressure Map is a privacy-first health reporting checker designed for frontline 
   - Username: `admin`
   - Password: `PressureMap2026!` *(from `.env.example`)*
 - **Health Worker:**
-  - Catchment Block Access Code: `BLOCK-ALPHA1` *(from `data/blockCodes.json`)*
+  - Catchment Block Access Code: `BLOCK-ALPHA1` *(from `backend/data/blockCodes.json`)*
+
+---
+
+## Project Structure
+- `frontend/`: Plain HTML, CSS, and vanilla JavaScript (Admin dashboard, Worker portal, Simulator, Responsible Use guide, local vendor libraries)
+- `backend/`: Node.js + Express backend (`server.js`, pure logic checks in `logic/`, synthetic demo data in `data/`, and test suites in `test/`)
 
 > **Note:** All data is synthetic demo data. Demo-level login only.
 
