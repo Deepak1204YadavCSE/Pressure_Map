@@ -6,16 +6,26 @@
 
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
 const app = require('../server.js');
 
 let server;
 let baseUrl;
 let adminCookie = '';
 let workerCookie = '';
+let tempDir = '';
 
 describe('Pressure Map API Integration Tests', () => {
 
   before(async () => {
+    // Isolated temporary data directory for tests
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-map-test-api-'));
+    fs.copyFileSync(path.join(__dirname, '..', 'data', 'reports.backup.json'), path.join(tempDir, 'reports.json'));
+    fs.copyFileSync(path.join(__dirname, '..', 'data', 'workerVoice.backup.json'), path.join(tempDir, 'workerVoice.json'));
+    process.env.DATA_DIR = tempDir;
+
     await new Promise((resolve) => {
       server = app.listen(0, () => {
         const port = server.address().port;
@@ -42,7 +52,12 @@ describe('Pressure Map API Integration Tests', () => {
   });
 
   after(async () => {
-    await new Promise((resolve) => server.close(resolve));
+    if (server) await new Promise((resolve) => server.close(resolve));
+    if (tempDir && fs.existsSync(tempDir)) {
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {}
+    }
   });
 
   test('GET /api/summary returns valid KPI metrics and filter lists (excluding suppressed groups from counts & filters)', async () => {
@@ -198,7 +213,7 @@ describe('Pressure Map API Integration Tests', () => {
     assert.equal(suppressedBlock, undefined, 'Suppressed blocks (< 30 eligible) must NEVER be shown in worker voice');
   });
 
-  test('GET /api/findings returns live computed findings with small-group masking', async () => {
+  test('GET /api/findings returns live computed findings with small-group masking (no rule findings, no numbers, status: suppressed)', async () => {
     const res = await fetch(`${baseUrl}/api/findings`, {
       headers: { 'Cookie': adminCookie }
     });
@@ -210,14 +225,32 @@ describe('Pressure Map API Integration Tests', () => {
 
     const suppressedItem = data.results.find(item => item.row.isSuppressed === true);
     assert.ok(suppressedItem, 'Expected at least one suppressed small group in demo data');
+
+    // Rule-specific findings must be empty
+    assert.equal(suppressedItem.findings.length, 0, 'Suppressed group must return NO rule-specific findings');
+
+    // Status metadata must explicitly identify suppression
+    assert.equal(suppressedItem.statusInfo.status, 'suppressed');
+    assert.equal(suppressedItem.statusInfo.label, 'Suppressed (small group)');
+    assert.equal(suppressedItem.statusInfo.icon, '–');
+
+    // All numerical metrics must be masked to string with no values derived from data
     assert.equal(suppressedItem.row.eligible, 'Suppressed (small group)');
     assert.equal(suppressedItem.row.reported, 'Suppressed (small group)');
+    assert.equal(suppressedItem.row.target, 'Suppressed (small group)');
+    assert.equal(suppressedItem.row.avg, 'Suppressed (small group)');
+    assert.equal(suppressedItem.row.sessionsPlanned, 'Suppressed (small group)');
+    assert.equal(suppressedItem.row.sessionsHeld, 'Suppressed (small group)');
+
+    // Context derivations must be null
+    assert.equal(suppressedItem.suggestedFairTarget, null);
+    assert.equal(suppressedItem.workerVoice, null);
   });
 
-  test('POST /api/report rejects personal identifier fields', async () => {
+  test('POST /api/report rejects personal identifier fields and free-text notes', async () => {
     const badPayload = {
-      district: 'Test District',
-      block: 'Block X',
+      district: 'North Highlands',
+      block: 'Block Alpha-1',
       month: '2026-05',
       indicator: 'DPT3',
       workerName: 'Sister Mary', // FORBIDDEN IDENTIFIER
@@ -241,11 +274,11 @@ describe('Pressure Map API Integration Tests', () => {
     assert.ok(data.error.includes('Disallowed field "workerName"'));
   });
 
-  test('POST /api/report accepts valid anonymous group report', async () => {
-    const validPayload = {
+  test('POST /api/report accepts valid anonymous group report and replaces duplicate unique key', async () => {
+    const initialPayload = {
       district: 'North Highlands',
       block: 'Block Alpha-1',
-      month: '2026-05',
+      month: '2026-07',
       indicator: 'DPT3',
       eligible: 120,
       reported: 100,
@@ -253,31 +286,59 @@ describe('Pressure Map API Integration Tests', () => {
       avg: 95,
       sessionsPlanned: 8,
       sessionsHeld: 8,
-      problems: ['Resources are short'],
-      notes: 'Vaccine transport delayed due to heavy rain in sector.'
+      problems: ['Resources are short']
     };
 
-    const res = await fetch(`${baseUrl}/api/report`, {
+    const res1 = await fetch(`${baseUrl}/api/report`, {
       method: 'POST',
       headers: {
         'Cookie': workerCookie,
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(validPayload)
+      body: JSON.stringify(initialPayload)
     });
 
-    assert.equal(res.status, 201);
-    const data = await res.json();
-    assert.equal(data.success, true);
-    assert.ok(data.record);
-    assert.equal(data.record.district, 'North Highlands');
-    assert.equal(data.record.block, 'Block Alpha-1');
+    assert.equal(res1.status, 201);
+    const data1 = await res1.json();
+    assert.equal(data1.success, true);
+    assert.equal(data1.record.district, 'North Highlands');
+    assert.equal(data1.record.block, 'Block Alpha-1');
+    assert.equal(data1.record.reported, 100);
+
+    // Now submit updated report for SAME unique key (North Highlands + Block Alpha-1 + 2026-07 + DPT3)
+    const updatePayload = {
+      district: 'North Highlands',
+      block: 'Block Alpha-1',
+      month: '2026-07',
+      indicator: 'DPT3',
+      eligible: 120,
+      reported: 110, // updated number
+      target: 105,
+      avg: 95,
+      sessionsPlanned: 8,
+      sessionsHeld: 8,
+      problems: ['Resources are short']
+    };
+
+    const res2 = await fetch(`${baseUrl}/api/report`, {
+      method: 'POST',
+      headers: {
+        'Cookie': workerCookie,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(updatePayload)
+    });
+
+    assert.equal(res2.status, 201);
+    const data2 = await res2.json();
+    assert.equal(data2.record.reported, 110);
+    assert.ok(data2.message.includes('replaced prior entry'));
   });
 
-  test('POST /api/upload accepts CSV and filters disallowed fields', async () => {
+  test('POST /api/upload accepts CSV, rejects duplicate unique keys with clear reasons, and parses double quotes strictly', async () => {
     const csvContent = `district,block,month,indicator,eligible,reported,target,avg,sessionsPlanned,sessionsHeld
-Alpha District,Block 1,2026-05,DPT3,150,140,145,130,10,10
-Beta District,Block 2,2026-05,DPT3,120,110,115,100,8,8`;
+"Unique District","Block Upload 1","2026-08","DPT3",150,140,145,130,10,10
+"Unique District","Block Upload 1","2026-08","DPT3",150,140,145,130,10,10`;
 
     const res = await fetch(`${baseUrl}/api/upload`, {
       method: 'POST',
@@ -291,8 +352,37 @@ Beta District,Block 2,2026-05,DPT3,120,110,115,100,8,8`;
     assert.equal(res.status, 200);
     const data = await res.json();
     assert.equal(data.success, true);
-    assert.equal(data.acceptedCount, 2);
-    assert.equal(data.rejectedCount, 0);
+    assert.equal(data.acceptedCount, 1);
+    assert.equal(data.rejectedCount, 1);
+    assert.ok(data.rejected[0].reason.includes('Duplicate entry'));
+  });
+
+  test('GET /api/export prefixes formula characters (=, +, -, @) with single quote', async () => {
+    // Add a record with formula characters into tempDir reports to test injection prevention
+    const reportsPath = path.join(tempDir, 'reports.json');
+    const reports = JSON.parse(fs.readFileSync(reportsPath, 'utf8'));
+    reports.push({
+      district: '=SUM(1,2)',
+      block: '+InjectedBlock',
+      month: '2026-11',
+      indicator: '-FormulaIndicator',
+      eligible: 100,
+      reported: 90,
+      target: 95,
+      avg: 85
+    });
+    fs.writeFileSync(reportsPath, JSON.stringify(reports));
+
+    const res = await fetch(`${baseUrl}/api/export`, {
+      headers: { 'Cookie': adminCookie }
+    });
+    assert.equal(res.status, 200);
+    const csv = await res.text();
+    assert.ok(csv.startsWith('District,Block'));
+    // Must contain prefixed formula cells
+    assert.ok(csv.includes(`"'=SUM(1,2)"`), 'Cell starting with = must be prefixed with single quote');
+    assert.ok(csv.includes(`"'+InjectedBlock"`), 'Cell starting with + must be prefixed with single quote');
+    assert.ok(csv.includes(`"'-FormulaIndicator"`), 'Cell starting with - must be prefixed with single quote');
   });
 
   test('POST /api/reset successfully restores demo data', async () => {

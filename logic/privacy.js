@@ -17,8 +17,15 @@ const ALLOWED_FIELDS = new Set([
   'avg',
   'sessionsPlanned',
   'sessionsHeld',
-  'problems',
-  'notes'
+  'problems'
+]);
+
+// Fixed problem checkbox values accepted by worker voice
+const VALID_PROBLEMS = new Set([
+  'Target is unrealistic',
+  'Resources are short',
+  'Population count looks wrong',
+  'Severe weather or geography'
 ]);
 
 // Substrings and patterns that indicate personal or worker identifiers
@@ -49,18 +56,6 @@ function validatePrivacy(record) {
       return {
         valid: false,
         error: `Privacy violation: Field "${key}" is not on the permitted group-level reporting allowlist.`
-      };
-    }
-  }
-
-  // Check string values for accidental ID or phone number leak
-  const notes = record.notes || '';
-  if (typeof notes === 'string') {
-    // Basic check for 10-12 digit phone/aadhaar patterns in notes
-    if (/\b\d{10,12}\b/.test(notes)) {
-      return {
-        valid: false,
-        error: 'Privacy violation: Notes field appears to contain a phone number or identification number. Only general system observations are allowed.'
       };
     }
   }
@@ -115,6 +110,7 @@ function maskRowForPrivacy(row) {
 
 /**
  * Masks findings for a small group to prevent reverse-engineering of cohort counts.
+ * Returns empty array for small groups so no rule-specific findings or numbers are exposed.
  * 
  * @param {Array<object>} findings - Array of finding objects
  * @param {object} row - Associated raw row
@@ -122,15 +118,8 @@ function maskRowForPrivacy(row) {
  */
 function maskFindingsForPrivacy(findings, row) {
   if (!findings || !Array.isArray(findings)) return [];
-  if (!isSmallGroup(row)) return findings;
-
-  return findings.map(finding => ({
-    ...finding,
-    observed: 'Suppressed (small group)',
-    reference: 'Suppressed (small group)',
-    explanation: `${finding.explanation} [Cohort details suppressed: < 30 eligible]`,
-    isSuppressed: true
-  }));
+  if (isSmallGroup(row)) return []; // NO rule-specific findings, numbers, or percentages
+  return findings;
 }
 
 /**
@@ -185,6 +174,7 @@ function calculatePrivacySafeTotals(rows) {
 
 module.exports = {
   ALLOWED_FIELDS,
+  VALID_PROBLEMS,
   validatePrivacy,
   isSmallGroup,
   maskRowForPrivacy,

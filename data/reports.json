@@ -358,18 +358,5 @@
     "avg": 175,
     "sessionsPlanned": 12,
     "sessionsHeld": 12
-  },
-  {
-    "district": "North Highlands",
-    "block": "Block Alpha-1",
-    "month": "2026-05",
-    "indicator": "DPT3",
-    "eligible": 100,
-    "reported": 150,
-    "target": 90,
-    "avg": 89,
-    "sessionsPlanned": 8,
-    "sessionsHeld": 8,
-    "problems": []
   }
 ]

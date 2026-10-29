@@ -264,7 +264,7 @@ function getRowStatus(findings) {
   if (!findings || findings.length === 0) {
     return {
       status: 'ok',
-      label: 'Target Feasible',
+      label: 'Within eligible population',
       badgeClass: 'status-ok',
       icon: '✓'
     };
@@ -312,7 +312,7 @@ function getRowStatus(findings) {
 
   return {
     status: 'ok',
-    label: 'Target Feasible',
+    label: 'Within eligible population',
     badgeClass: 'status-ok',
     icon: '✓'
   };

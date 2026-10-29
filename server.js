@@ -47,18 +47,23 @@ const {
   isSmallGroup, 
   maskRowForPrivacy, 
   maskFindingsForPrivacy, 
-  calculatePrivacySafeTotals 
+  calculatePrivacySafeTotals,
+  VALID_PROBLEMS 
 } = require('./logic/privacy.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Paths
-const DATA_FILE = path.join(__dirname, 'data', 'reports.json');
+// Trust proxy for reverse proxies / production environments
+app.set('trust proxy', 1);
+
+// Paths (supports dynamic DATA_DIR for test isolation)
+const DATA_DIR = process.env.DATA_DIR || path.join(__dirname, 'data');
+const DATA_FILE = path.join(DATA_DIR, 'reports.json');
 const BACKUP_FILE = path.join(__dirname, 'data', 'reports.backup.json');
 const BLOCKS_FILE = path.join(__dirname, 'data', 'blocks.json');
 const BLOCK_CODES_FILE = path.join(__dirname, 'data', 'blockCodes.json');
-const WORKER_VOICE_FILE = path.join(__dirname, 'data', 'workerVoice.json');
+const WORKER_VOICE_FILE = path.join(DATA_DIR, 'workerVoice.json');
 const WORKER_VOICE_BACKUP = path.join(__dirname, 'data', 'workerVoice.backup.json');
 
 // Middleware: Body parsers
@@ -99,7 +104,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 // SESSION & AUTHENTICATION STATE
 // ==========================================
 
-// In-memory sessions map: token -> { role, block, district, expiresAt }
+// In-memory sessions map: token -> { role, block, district, expiresAt, reportedWorkerVoice: Set }
 const sessions = new Map();
 const SESSION_DURATION_MS = 2 * 60 * 60 * 1000; // 2 hours
 
@@ -174,14 +179,15 @@ function requireRole(requiredRole) {
  */
 function readReports() {
   try {
-    if (!fs.existsSync(DATA_FILE)) {
+    const targetFile = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'reports.json') : DATA_FILE;
+    if (!fs.existsSync(targetFile)) {
       if (fs.existsSync(BACKUP_FILE)) {
-        fs.copyFileSync(BACKUP_FILE, DATA_FILE);
+        fs.copyFileSync(BACKUP_FILE, targetFile);
       } else {
         return [];
       }
     }
-    const raw = fs.readFileSync(DATA_FILE, 'utf8');
+    const raw = fs.readFileSync(targetFile, 'utf8');
     return JSON.parse(raw);
   } catch (err) {
     console.error('Error reading reports file:', err);
@@ -194,7 +200,8 @@ function readReports() {
  */
 function writeReports(data) {
   try {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+    const targetFile = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'reports.json') : DATA_FILE;
+    fs.writeFileSync(targetFile, JSON.stringify(data, null, 2), 'utf8');
     return true;
   } catch (err) {
     console.error('Error writing reports file:', err);
@@ -237,14 +244,15 @@ function readBlockCodes() {
  */
 function readWorkerVoice() {
   try {
-    if (!fs.existsSync(WORKER_VOICE_FILE)) {
+    const targetFile = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'workerVoice.json') : WORKER_VOICE_FILE;
+    if (!fs.existsSync(targetFile)) {
       if (fs.existsSync(WORKER_VOICE_BACKUP)) {
-        fs.copyFileSync(WORKER_VOICE_BACKUP, WORKER_VOICE_FILE);
+        fs.copyFileSync(WORKER_VOICE_BACKUP, targetFile);
       } else {
         return [];
       }
     }
-    const raw = fs.readFileSync(WORKER_VOICE_FILE, 'utf8');
+    const raw = fs.readFileSync(targetFile, 'utf8');
     return JSON.parse(raw);
   } catch (err) {
     console.error('Error reading worker voice file:', err);
@@ -257,7 +265,8 @@ function readWorkerVoice() {
  */
 function writeWorkerVoice(data) {
   try {
-    fs.writeFileSync(WORKER_VOICE_FILE, JSON.stringify(data, null, 2), 'utf8');
+    const targetFile = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'workerVoice.json') : WORKER_VOICE_FILE;
+    fs.writeFileSync(targetFile, JSON.stringify(data, null, 2), 'utf8');
     return true;
   } catch (err) {
     console.error('Error writing worker voice file:', err);
@@ -266,7 +275,7 @@ function writeWorkerVoice(data) {
 }
 
 /**
- * Simple standard CSV parser (handles commas and quotes)
+ * Standard CSV parser (strictly double quotes "..." as quote character; apostrophes are normal text)
  */
 function parseCSV(text) {
   const lines = text.split(/\r?\n/).filter(line => line.trim().length > 0);
@@ -274,7 +283,7 @@ function parseCSV(text) {
 
   // Parse header
   const headerLine = lines[0];
-  const headers = splitCSVRow(headerLine).map(h => h.trim().replace(/^["']|["']$/g, ''));
+  const headers = splitCSVRow(headerLine).map(h => h.trim().replace(/^"|"$/g, ''));
 
   const rows = [];
   for (let i = 1; i < lines.length; i++) {
@@ -284,7 +293,7 @@ function parseCSV(text) {
     const rowObj = {};
     headers.forEach((header, index) => {
       let val = rawValues[index] !== undefined ? rawValues[index].trim() : '';
-      val = val.replace(/^["']|["']$/g, '');
+      val = val.replace(/^"|"$/g, ''); // Strip outer double quotes only
       rowObj[header] = val;
     });
     rows.push({ rowNumber: i + 1, data: rowObj });
@@ -294,7 +303,7 @@ function parseCSV(text) {
 }
 
 /**
- * Split CSV line respecting quotation marks
+ * Split CSV line respecting double quotes only
  */
 function splitCSVRow(line) {
   const values = [];
@@ -303,7 +312,7 @@ function splitCSVRow(line) {
 
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
-    if (char === '"' || char === "'") {
+    if (char === '"') {
       inQuotes = !inQuotes;
     } else if (char === ',' && !inQuotes) {
       values.push(current);
@@ -324,9 +333,11 @@ function splitCSVRow(line) {
  * POST /api/login
  * Body: { code } for Worker, OR { username, password } for Admin
  * Sets httpOnly cookie session_token on success.
+ * Cookie secure: true in production.
  */
 app.post('/api/login', loginRateLimiter, (req, res) => {
   const { code, username, password } = req.body || {};
+  const isProduction = process.env.NODE_ENV === 'production';
 
   // Case 1: Worker Login via Block Access Code
   if (code && typeof code === 'string') {
@@ -351,12 +362,14 @@ app.post('/api/login', loginRateLimiter, (req, res) => {
       role: 'worker',
       block: matched.block,
       district: matched.district,
+      reportedWorkerVoice: new Set(),
       expiresAt: Date.now() + SESSION_DURATION_MS
     });
 
     res.cookie('session_token', token, {
       httpOnly: true,
       sameSite: 'lax',
+      secure: isProduction,
       maxAge: SESSION_DURATION_MS,
       path: '/'
     });
@@ -386,12 +399,14 @@ app.post('/api/login', loginRateLimiter, (req, res) => {
       role: 'admin',
       block: null,
       district: null,
+      reportedWorkerVoice: new Set(),
       expiresAt: Date.now() + SESSION_DURATION_MS
     });
 
     res.cookie('session_token', token, {
       httpOnly: true,
       sameSite: 'lax',
+      secure: isProduction,
       maxAge: SESSION_DURATION_MS,
       path: '/'
     });
@@ -414,11 +429,16 @@ app.post('/api/login', loginRateLimiter, (req, res) => {
  * Destroys session in memory and clears cookie.
  */
 app.post('/api/logout', (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production';
   const token = req.cookies?.session_token;
   if (token) {
     sessions.delete(token);
   }
-  res.clearCookie('session_token', { path: '/' });
+  res.clearCookie('session_token', {
+    path: '/',
+    secure: isProduction,
+    sameSite: 'lax'
+  });
   res.json({
     success: true,
     message: 'Logged out successfully.'
@@ -450,7 +470,10 @@ app.get('/api/me', (req, res) => {
  * GET /api/findings
  * Protected: Admin only
  * Computes findings live from current data file with optional filtering.
- * Privacy-safe: small groups (<30) are masked with "Suppressed (small group)".
+ * Privacy-safe: small groups (<30) return:
+ * - NO rule-specific findings
+ * - no percentages or numbers in explanations
+ * - statusInfo = { status: "suppressed", label: "Suppressed (small group)", icon: "–" }
  */
 app.get('/api/findings', requireRole('admin'), (req, res) => {
   const rawReports = readReports();
@@ -460,25 +483,35 @@ app.get('/api/findings', requireRole('admin'), (req, res) => {
   const results = [];
 
   for (const rawRow of rawReports) {
-    // 1. Compute findings live (nothing hardcoded)
+    const isSupp = isSmallGroup(rawRow);
     const rawFindings = checkRow(rawRow);
-    const statusInfo = getRowStatus(rawFindings);
+    let statusInfo = getRowStatus(rawFindings);
 
-    // 2. Filter matching
+    // Suppressed small group (< 30) status overrides
+    if (isSupp) {
+      statusInfo = {
+        status: 'suppressed',
+        label: 'Suppressed (small group)',
+        icon: '–',
+        badgeClass: 'status-inconclusive'
+      };
+    }
+
+    // Filter matching
     if (district && district !== 'All' && rawRow.district !== district) continue;
     if (block && block !== 'All' && rawRow.block !== block) continue;
     if (month && month !== 'All' && rawRow.month !== month) continue;
     if (status && status !== 'All' && statusInfo.status !== status) continue;
 
-    // 3. Privacy suppression for small groups (< 30)
+    // Privacy suppression for small groups (< 30)
     const maskedRow = maskRowForPrivacy(rawRow);
-    const maskedFindings = maskFindingsForPrivacy(rawFindings, rawRow);
-    const isSupp = isSmallGroup(rawRow);
+    // For suppressed groups: NO rule-specific findings or numbers
+    const maskedFindings = isSupp ? [] : maskFindingsForPrivacy(rawFindings, rawRow);
 
-    // 4. Suggested fair target calculation
+    // Suggested fair target calculation (never produced for suppressed groups)
     const suggestedTarget = isSupp ? null : suggestTargetRange(rawRow);
 
-    // 5. Worker voice context (only if >= 5 reports and not suppressed)
+    // Worker voice context (only if >= 5 reports and not suppressed)
     let workerVoiceSummary = null;
     if (!isSupp) {
       const wv = workerVoiceData.find(w => w.district === rawRow.district && w.block === rawRow.block && w.month === rawRow.month);
@@ -814,14 +847,16 @@ app.get('/api/worker-voice', requireRole('admin'), (req, res) => {
  * POST /api/report
  * Protected: Worker only
  * Worker submits a group-level report.
- * The report's block is strictly taken from the SESSION, not from the form.
- * Validates against allowlist & privacy rules, ensures no individual identifiers,
- * appends to data/reports.json.
+ * - District and block taken strictly from the SESSION
+ * - Free text notes removed completely
+ * - Problems restricted only to the 4 fixed values
+ * - Unique key: district + block + month + indicator (new replaces old)
+ * - Worker voice: counts at most one report per block + month per session
  */
 app.post('/api/report', requireRole('worker'), (req, res) => {
   const payload = req.body || {};
 
-  // 1. Strict Privacy Check (reject workerName, patientId, Aadhaar, phone, etc.)
+  // 1. Strict Privacy Check (reject workerName, patientId, notes, Aadhaar, phone, etc.)
   const privacyCheck = validatePrivacy(payload);
   if (!privacyCheck.valid) {
     return res.status(400).json({
@@ -830,7 +865,7 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
     });
   }
 
-  // Force block from the worker's session (worker can only report for their own block!)
+  // Force block and district from the worker's session
   const sessionBlock = req.session.block;
   const sessionDistrict = req.session.district || (payload.district ? String(payload.district).trim() : '');
 
@@ -850,7 +885,12 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
     });
   }
 
-  // Clean and construct record strictly without personal identifiers
+  // Accept only the 4 fixed problem checkbox values; ignore any other strings
+  const validProblems = Array.isArray(payload.problems)
+    ? payload.problems.filter(p => typeof p === 'string' && VALID_PROBLEMS.has(p.trim())).map(p => p.trim())
+    : [];
+
+  // Clean and construct record strictly without personal identifiers or free-text notes
   const newRecord = {
     district: sessionDistrict,
     block: sessionBlock, // Strictly from session!
@@ -864,14 +904,26 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
     sessionsHeld: payload.sessionsHeld !== '' && payload.sessionsHeld !== undefined ? Number(payload.sessionsHeld) : 0
   };
 
-  if (payload.problems) newRecord.problems = payload.problems;
-  if (payload.notes) newRecord.notes = String(payload.notes).trim();
+  if (validProblems.length > 0) {
+    newRecord.problems = validProblems;
+  }
 
-  // 3. Save to data file
+  // 3. Save to data file with UNIQUE KEY: district + block + month + indicator
+  // A new report replaces the old one if the key matches!
   const reports = readReports();
-  reports.push(newRecord);
-  const ok = writeReports(reports);
+  const rowKey = `${newRecord.district.toLowerCase()}___${newRecord.block.toLowerCase()}___${newRecord.month.toLowerCase()}___${newRecord.indicator.toLowerCase()}`;
+  
+  const existingIdx = reports.findIndex(r => 
+    `${String(r.district).toLowerCase()}___${String(r.block).toLowerCase()}___${String(r.month).toLowerCase()}___${String(r.indicator || 'General').toLowerCase()}` === rowKey
+  );
 
+  if (existingIdx >= 0) {
+    reports[existingIdx] = newRecord; // Replace existing
+  } else {
+    reports.push(newRecord); // Append new
+  }
+
+  const ok = writeReports(reports);
   if (!ok) {
     return res.status(500).json({
       success: false,
@@ -879,8 +931,16 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
     });
   }
 
-  // 4. Update anonymous group-level worker voice tallies (no names, no IDs, no free text)
-  if (Array.isArray(payload.problems) && payload.problems.length > 0) {
+  // 4. Update anonymous group-level worker voice tallies
+  // Rule: Count at most one report per block + month per session
+  if (!req.session.reportedWorkerVoice) {
+    req.session.reportedWorkerVoice = new Set();
+  }
+  const wvSessionKey = `${newRecord.block}___${newRecord.month}`;
+
+  if (validProblems.length > 0 && !req.session.reportedWorkerVoice.has(wvSessionKey)) {
+    req.session.reportedWorkerVoice.add(wvSessionKey);
+
     const wvList = readWorkerVoice();
     let wvEntry = wvList.find(w => w.district === newRecord.district && w.block === newRecord.block && w.month === newRecord.month);
     if (!wvEntry) {
@@ -894,11 +954,8 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
       wvList.push(wvEntry);
     }
     wvEntry.totalReports = (wvEntry.totalReports || 0) + 1;
-    for (const prob of payload.problems) {
-      if (typeof prob === 'string' && prob.trim()) {
-        const cleanProb = prob.trim();
-        wvEntry.issues[cleanProb] = (wvEntry.issues[cleanProb] || 0) + 1;
-      }
+    for (const prob of validProblems) {
+      wvEntry.issues[prob] = (wvEntry.issues[prob] || 0) + 1;
     }
     writeWorkerVoice(wvList);
   }
@@ -909,7 +966,7 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
 
   res.status(201).json({
     success: true,
-    message: 'Group report recorded safely without individual identifiers.',
+    message: existingIdx >= 0 ? 'Group report updated successfully (replaced prior entry).' : 'Group report recorded safely without individual identifiers.',
     record: maskRowForPrivacy(newRecord),
     findings: maskFindingsForPrivacy(findings, newRecord),
     statusInfo
@@ -920,7 +977,8 @@ app.post('/api/report', requireRole('worker'), (req, res) => {
  * POST /api/upload
  * Protected: Admin only
  * Accepts CSV string or raw text, parses it, validates privacy and schema,
- * appends or replaces data, and reports accepted/rejected counts.
+ * rejects duplicates with clear reasons, appends or replaces data,
+ * and reports accepted/rejected counts.
  */
 app.post('/api/upload', requireRole('admin'), (req, res) => {
   let csvText = '';
@@ -945,6 +1003,12 @@ app.post('/api/upload', requireRole('admin'), (req, res) => {
 
   const accepted = [];
   const rejected = [];
+
+  // Track existing unique keys (district + block + month + indicator)
+  const currentData = req.query.mode === 'replace' ? [] : readReports();
+  const seenKeys = new Set(
+    currentData.map(r => `${String(r.district).trim().toLowerCase()}___${String(r.block).trim().toLowerCase()}___${String(r.month).trim().toLowerCase()}___${String(r.indicator || 'General').trim().toLowerCase()}`)
+  );
 
   for (const item of parsed) {
     const rawRow = item.data;
@@ -988,12 +1052,29 @@ app.post('/api/upload', requireRole('admin'), (req, res) => {
       continue;
     }
 
+    const dist = String(normalized.district).trim();
+    const blk = String(normalized.block).trim();
+    const mth = String(normalized.month).trim();
+    const ind = normalized.indicator ? String(normalized.indicator).trim() : 'Health Indicator';
+    const rowKey = `${dist.toLowerCase()}___${blk.toLowerCase()}___${mth.toLowerCase()}___${ind.toLowerCase()}`;
+
+    // 3. Unique Key Check: Reject duplicates with reason
+    if (seenKeys.has(rowKey)) {
+      rejected.push({
+        rowNumber: item.rowNumber,
+        reason: `Duplicate entry: A record for district "${dist}", block "${blk}", month "${mth}", indicator "${ind}" already exists.`,
+        data: rawRow
+      });
+      continue;
+    }
+    seenKeys.add(rowKey);
+
     // Prepare accepted row
     accepted.push({
-      district: String(normalized.district).trim(),
-      block: String(normalized.block).trim(),
-      month: String(normalized.month).trim(),
-      indicator: normalized.indicator ? String(normalized.indicator).trim() : 'Health Indicator',
+      district: dist,
+      block: blk,
+      month: mth,
+      indicator: ind,
       eligible: Number(normalized.eligible) || 0,
       reported: Number(normalized.reported) || 0,
       target: Number(normalized.target) || 0,
@@ -1005,9 +1086,9 @@ app.post('/api/upload', requireRole('admin'), (req, res) => {
 
   // Update storage
   if (accepted.length > 0) {
-    let currentData = req.query.mode === 'replace' ? [] : readReports();
-    currentData = currentData.concat(accepted);
-    writeReports(currentData);
+    let updatedData = req.query.mode === 'replace' ? [] : readReports();
+    updatedData = updatedData.concat(accepted);
+    writeReports(updatedData);
   }
 
   res.json({
@@ -1026,11 +1107,14 @@ app.post('/api/upload', requireRole('admin'), (req, res) => {
  */
 app.post('/api/reset', requireRole('admin'), (req, res) => {
   try {
+    const targetReports = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'reports.json') : DATA_FILE;
+    const targetWorkerVoice = process.env.DATA_DIR ? path.join(process.env.DATA_DIR, 'workerVoice.json') : WORKER_VOICE_FILE;
+
     if (fs.existsSync(BACKUP_FILE)) {
-      fs.copyFileSync(BACKUP_FILE, DATA_FILE);
+      fs.copyFileSync(BACKUP_FILE, targetReports);
     }
     if (fs.existsSync(WORKER_VOICE_BACKUP)) {
-      fs.copyFileSync(WORKER_VOICE_BACKUP, WORKER_VOICE_FILE);
+      fs.copyFileSync(WORKER_VOICE_BACKUP, targetWorkerVoice);
     }
 
     if (fs.existsSync(BACKUP_FILE)) {
@@ -1056,7 +1140,8 @@ app.post('/api/reset', requireRole('admin'), (req, res) => {
  * GET /api/export
  * Protected: Admin only
  * Downloads a privacy-safe CSV of findings.
- * Small groups (<30) are strictly EXCLUDED from CSV export.
+ * - Small groups (<30) are strictly EXCLUDED from CSV export.
+ * - Cells starting with =, +, -, @ are prefixed with a single quote ' to prevent formula injection.
  */
 app.get('/api/export', requireRole('admin'), (req, res) => {
   const reports = readReports();
@@ -1081,6 +1166,17 @@ app.get('/api/export', requireRole('admin'), (req, res) => {
 
   const csvLines = [headers.join(',')];
 
+  const escapeCSV = (val) => {
+    if (val === null || val === undefined) return '""';
+    let str = String(val);
+    // Formula injection protection: prefix =, +, -, @ with single quote '
+    if (/^[=+\-@]/.test(str)) {
+      str = "'" + str;
+    }
+    str = str.replace(/"/g, '""');
+    return `"${str}"`;
+  };
+
   for (const rawRow of reports) {
     // Strictly exclude suppressed small groups (< 30) from CSV export
     if (isSmallGroup(rawRow)) continue;
@@ -1089,12 +1185,6 @@ app.get('/api/export', requireRole('admin'), (req, res) => {
     const statusInfo = getRowStatus(rawFindings);
     const maskedRow = maskRowForPrivacy(rawRow);
     const maskedFindings = maskFindingsForPrivacy(rawFindings, rawRow);
-
-    const escapeCSV = (val) => {
-      if (val === null || val === undefined) return '""';
-      const str = String(val).replace(/"/g, '""');
-      return `"${str}"`;
-    };
 
     if (maskedFindings.length === 0) {
       // Clean row with no findings

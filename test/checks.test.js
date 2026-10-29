@@ -221,7 +221,7 @@ describe('Pressure Map Logic Checks', () => {
     assert.equal(findings.length, 0);
     const status = getRowStatus(findings);
     assert.equal(status.status, 'ok');
-    assert.equal(status.label, 'Target Feasible');
+    assert.equal(status.label, 'Within eligible population');
   });
 
   test('Tone and Language: Words like fraud, cheating, or faulty worker must never appear', () => {
@@ -278,6 +278,19 @@ describe('Privacy and Small-Group Suppression Logic', () => {
       target: 90
     };
     assert.equal(validatePrivacy(validPayload).valid, true);
+
+    // Free-text notes field must now be rejected
+    const notesPayload = {
+      district: 'North District',
+      block: 'Block A',
+      month: '2026-05',
+      indicator: 'DPT3',
+      eligible: 100,
+      reported: 85,
+      target: 90,
+      notes: 'Some free-text notes'
+    };
+    assert.equal(validatePrivacy(notesPayload).valid, false);
   });
 
   test('isSmallGroup correctly flags groups with eligible < 30', () => {

@@ -58,11 +58,13 @@
           <div class="form-grid-2" style="margin-bottom: 1rem;">
             <div class="form-group">
               <label for="input-district">District Name *</label>
-              <input type="text" id="input-district" name="district" required placeholder="e.g., North Highlands" class="form-control">
+              <input type="text" id="input-district" name="district" required placeholder="Assigned district" class="form-control" readonly style="background-color: #F3F4F6; cursor: not-allowed;">
+              <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; display: block;">Assigned from your authenticated session.</span>
             </div>
             <div class="form-group">
               <label for="input-block">Block / Catchment Zone *</label>
-              <input type="text" id="input-block" name="block" required placeholder="e.g., Block Alpha-1" class="form-control">
+              <input type="text" id="input-block" name="block" required placeholder="Assigned block" class="form-control" readonly style="background-color: #F3F4F6; cursor: not-allowed;">
+              <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.2rem; display: block;">Locked to your catchment block.</span>
             </div>
           </div>
 
@@ -147,11 +149,6 @@
                 <span><strong>Access barrier:</strong> Monsoons, road closures, or remote dispersed dwellings.</span>
               </label>
             </div>
-
-            <div class="form-group" style="margin-top: 1rem;">
-              <label for="input-notes">Additional System Notes (Optional)</label>
-              <textarea id="input-notes" name="notes" rows="2" class="form-control" placeholder="Describe systemic challenges (Do NOT include patient names or worker IDs)"></textarea>
-            </div>
           </div>
 
           <!-- Error Feedback Container -->
@@ -201,9 +198,6 @@
     const errorEl = document.getElementById('form-error');
     const successEl = document.getElementById('form-success');
 
-    // Forbidden PII patterns check
-    const PII_REGEX = /(name|worker|aadhaar|uid|phone|mobile|patient|beneficiary|address)/i;
-
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errorEl.style.display = 'none';
@@ -220,17 +214,9 @@
       const avg = document.getElementById('input-avg').value;
       const sessionsPlanned = document.getElementById('input-planned').value;
       const sessionsHeld = document.getElementById('input-held').value;
-      const notes = document.getElementById('input-notes').value.trim();
 
-      // Checkboxes
+      // Checkboxes (4 fixed problem values)
       const problemCheckboxes = Array.from(document.querySelectorAll('input[name="problem"]:checked')).map(cb => cb.value);
-
-      // 2. Client-side Privacy Validation
-      if (PII_REGEX.test(notes) && /\b\d{10,12}\b/.test(notes)) {
-        errorEl.textContent = 'Privacy Protection Triggered: Please remove any phone numbers, Aadhaar numbers, or personal worker/patient IDs from the notes field.';
-        errorEl.style.display = 'block';
-        return;
-      }
 
       if (!district || !block || !month || eligible === '' || reported === '' || target === '') {
         errorEl.textContent = 'Please fill out all mandatory fields: District, Block, Month, Eligible, Reported, and Target.';
@@ -253,8 +239,7 @@
           avg: avg !== '' ? Number(avg) : 0,
           sessionsPlanned: sessionsPlanned !== '' ? Number(sessionsPlanned) : 0,
           sessionsHeld: sessionsHeld !== '' ? Number(sessionsHeld) : 0,
-          problems: problemCheckboxes,
-          notes
+          problems: problemCheckboxes
         };
 
         const res = await fetch('/api/report', {
@@ -280,7 +265,7 @@
         } else {
           analysisNote = `
             <div style="margin-top: 0.6rem; padding: 0.6rem; background: #DCFCE7; border: 1px solid var(--ok-border); border-radius: 4px; color: var(--ok-text);">
-              <strong>System Status: Target Feasible.</strong> Metrics are aligned within standard demographic parameters.
+              <strong>System Status: Within eligible population.</strong> Metrics are aligned within standard demographic parameters.
             </div>
           `;
         }

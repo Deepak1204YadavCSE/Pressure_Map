@@ -330,7 +330,7 @@ async function loadMap() {
 
       // Add "View findings" button to filter table
       popupContent += `
-        <button class="popup-btn" onclick="window.filterByBlock('${escapeHtml(b.district)}', '${escapeHtml(b.block)}')">
+        <button class="popup-btn filter-block-action" data-district="${escapeHtml(b.district)}" data-block="${escapeHtml(b.block)}">
           View findings &rarr;
         </button>
       `;
@@ -608,7 +608,7 @@ function openDetails(item) {
         <p style="font-size: 0.82rem; color: var(--primary); font-style: italic; margin-bottom: 0.65rem;">
           A starting point for review, not an order. Check sessions, staff and local context.
         </p>
-        <button class="btn btn-primary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem; width: 100%;" onclick="window.tryInSimulator('${escapeHtml(row.district)}', '${escapeHtml(row.block)}', ${item.suggestedFairTarget.high})">
+        <button id="btn-try-simulator" class="btn btn-primary" style="font-size: 0.82rem; padding: 0.4rem 0.8rem; width: 100%;" data-district="${escapeHtml(row.district)}" data-block="${escapeHtml(row.block)}" data-target="${item.suggestedFairTarget.high}">
           Try in simulator &rarr;
         </button>
       </section>
@@ -618,7 +618,11 @@ function openDetails(item) {
   }
 
   // Findings details (System Explanation, Alternatives, Action)
-  if (findings.length > 0) {
+  if (isSuppressed) {
+    detailExplanationEl.textContent = 'Demographic cohorts with fewer than 30 eligible individuals are suppressed to preserve privacy. No rule findings or evaluations are performed.';
+    detailAlternativesEl.innerHTML = '<li>Small group privacy protection active.</li>';
+    detailActionEl.textContent = 'Maintain standard supportive supervision without evaluating individual target quotas on small cohorts.';
+  } else if (findings.length > 0) {
     const primaryFinding = findings[0];
     detailExplanationEl.textContent = primaryFinding.explanation;
 
@@ -828,6 +832,24 @@ document.addEventListener('DOMContentLoaded', async () => {
   uploadSubmitBtn.addEventListener('click', submitCsvUpload);
   uploadModal.addEventListener('click', (e) => {
     if (e.target === uploadModal) closeUploadModal();
+  });
+
+  // Event delegation for map popup and simulator triggers (removes inline onclick handlers)
+  document.addEventListener('click', (e) => {
+    const filterBtn = e.target.closest('.filter-block-action');
+    if (filterBtn) {
+      const dist = filterBtn.getAttribute('data-district');
+      const blk = filterBtn.getAttribute('data-block');
+      if (dist && blk) window.filterByBlock(dist, blk);
+    }
+
+    const simBtn = e.target.closest('#btn-try-simulator');
+    if (simBtn) {
+      const dist = simBtn.getAttribute('data-district');
+      const blk = simBtn.getAttribute('data-block');
+      const targetVal = simBtn.getAttribute('data-target');
+      if (dist && blk && targetVal) window.tryInSimulator(dist, blk, Number(targetVal));
+    }
   });
 
   // Escape key to close drawers

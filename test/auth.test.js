@@ -7,6 +7,7 @@
 
 const { test, describe, before, after } = require('node:test');
 const assert = require('node:assert/strict');
+const os = require('os');
 const fs = require('fs');
 const path = require('path');
 const app = require('../server.js');
@@ -15,10 +16,17 @@ let server;
 let baseUrl;
 let cachedWorkerCookie = '';
 let cachedAdminCookie = '';
+let tempDir = '';
 
 describe('Role-Based Demo Access & Permissions', () => {
 
   before(async () => {
+    // Isolated temporary data directory for tests
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'pressure-map-test-auth-'));
+    fs.copyFileSync(path.join(__dirname, '..', 'data', 'reports.backup.json'), path.join(tempDir, 'reports.json'));
+    fs.copyFileSync(path.join(__dirname, '..', 'data', 'workerVoice.backup.json'), path.join(tempDir, 'workerVoice.json'));
+    process.env.DATA_DIR = tempDir;
+
     await new Promise((resolve) => {
       server = app.listen(0, () => {
         const port = server.address().port;
@@ -29,7 +37,12 @@ describe('Role-Based Demo Access & Permissions', () => {
   });
 
   after(async () => {
-    await new Promise((resolve) => server.close(resolve));
+    if (server) await new Promise((resolve) => server.close(resolve));
+    if (tempDir && fs.existsSync(tempDir)) {
+      try {
+        fs.rmSync(tempDir, { recursive: true, force: true });
+      } catch {}
+    }
   });
 
   // Helper: Extract cookie value from response
@@ -230,6 +243,49 @@ describe('Role-Based Demo Access & Permissions', () => {
     assert.equal(data.record.block, 'Block Alpha-1');
   });
 
+  test('Worker Voice must count at most one report per block+month per session', async () => {
+    // Submit 1st report with problem for Block Alpha-1 (month: 2026-10)
+    const res1 = await fetch(`${baseUrl}/api/report`, {
+      method: 'POST',
+      headers: { 'Cookie': cachedWorkerCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: '2026-10',
+        indicator: 'DPT3',
+        eligible: 100,
+        reported: 80,
+        target: 90,
+        problems: ['Target is unrealistic']
+      })
+    });
+    assert.equal(res1.status, 201);
+
+    // Read worker voice tallies
+    const wvData1 = JSON.parse(fs.readFileSync(path.join(tempDir, 'workerVoice.json'), 'utf8'));
+    const entry1 = wvData1.find(w => w.block === 'Block Alpha-1' && w.month === '2026-10');
+    assert.ok(entry1);
+    const countAfterFirst = entry1.totalReports;
+
+    // Submit 2nd report within the SAME session for SAME block+month
+    const res2 = await fetch(`${baseUrl}/api/report`, {
+      method: 'POST',
+      headers: { 'Cookie': cachedWorkerCookie, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        month: '2026-10',
+        indicator: 'Measles-Rubella',
+        eligible: 100,
+        reported: 85,
+        target: 90,
+        problems: ['Target is unrealistic']
+      })
+    });
+    assert.equal(res2.status, 201);
+
+    // Worker Voice totalReports must NOT have incremented a second time
+    const wvData2 = JSON.parse(fs.readFileSync(path.join(tempDir, 'workerVoice.json'), 'utf8'));
+    const entry2 = wvData2.find(w => w.block === 'Block Alpha-1' && w.month === '2026-10');
+    assert.equal(entry2.totalReports, countAfterFirst, 'Second submission in same session must not double-count in worker voice');
+  });
+
   test('Stored reports contain no identifying fields (strict privacy enforcement)', async () => {
     // Attempt to submit report with forbidden personal identifier fields
     const disallowedPayloads = [
@@ -259,10 +315,10 @@ describe('Role-Based Demo Access & Permissions', () => {
       assert.ok(data.error.includes('Privacy violation'));
     }
 
-    // Verify stored reports in data file contain no forbidden identifier fields
-    const reportsPath = path.join(__dirname, '..', 'data', 'reports.json');
+    // Verify stored reports in temporary data file contain no forbidden identifier fields
+    const reportsPath = path.join(tempDir, 'reports.json');
     const reports = JSON.parse(fs.readFileSync(reportsPath, 'utf8'));
-    const forbiddenPattern = /(name|worker|aadhaar|uid|phone|mobile|patient|beneficiary|address|national_id|ssn|contact|staffId)/i;
+    const forbiddenPattern = /(name|worker|aadhaar|uid|phone|mobile|patient|beneficiary|address|national_id|ssn|contact|staffId|notes)/i;
 
     for (const row of reports) {
       for (const key of Object.keys(row)) {
