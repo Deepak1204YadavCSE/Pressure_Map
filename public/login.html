@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login – Pressure Map</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-title">
+            <h1>Pressure Map</h1>
+            <span class="badge-synthetic" title="This system operates exclusively on synthetic demonstration data.">Synthetic Demo Data</span>
+          </div>
+          <div class="tagline">Find Unfair Targets, Not Faulty Workers.</div>
+          <div class="principle-tag">Principle: Strengthen the system; protect the people in it.</div>
+        </div>
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="/responsible-use.html" class="nav-link">Responsible Use</a>
+          <a href="/login.html" class="nav-link active" aria-current="page">Login</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Visible Privacy Banner -->
+  <div class="privacy-banner">
+    <div class="container">
+      <div class="privacy-banner-inner">
+        <span class="privacy-icon" aria-hidden="true">🛡️</span>
+        <span><strong>Frontline Protection Guarantee:</strong> Worker login uses a shared block code. Reports are not linked to any individual. No worker names, personal IDs, or device identifiers are recorded.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content" style="display: flex; align-items: center; justify-content: center; flex: 1;">
+    <div class="container">
+      
+      <div class="login-wrapper">
+        <div class="login-card">
+
+          <!-- Role Selection Tabs -->
+          <div class="login-tabs" role="tablist" aria-label="Login Roles">
+            <button class="login-tab-btn active" id="tab-btn-worker" role="tab" aria-selected="true" aria-controls="panel-worker" onclick="switchTab('worker')">
+              🩺 Health Worker (block code)
+            </button>
+            <button class="login-tab-btn" id="tab-btn-admin" role="tab" aria-selected="false" aria-controls="panel-admin" onclick="switchTab('admin')">
+              📊 Supervisor / Admin
+            </button>
+          </div>
+
+          <div class="login-body">
+
+            <!-- Error message banner -->
+            <div id="login-error" class="banner banner-error" style="display: none; margin-bottom: 1.25rem;">
+              <span id="login-error-text">Invalid login credentials.</span>
+            </div>
+
+            <!-- TAB 1: Health Worker Login Form -->
+            <div id="panel-worker" role="tabpanel" aria-labelledby="tab-btn-worker">
+              <div class="login-notice">
+                <strong>Anonymity Guarantee:</strong> Worker login uses a shared block code. Reports are not linked to any individual.
+              </div>
+
+              <form id="form-worker" onsubmit="handleWorkerLogin(event)">
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                  <label for="worker-code">Catchment Block Access Code *</label>
+                  <input type="text" id="worker-code" name="code" required placeholder="e.g. BLOCK-ALPHA1" class="form-control" autocomplete="off" autofocus>
+                  <span style="font-size: 0.78rem; color: var(--text-muted); margin-top: 0.25rem; display: block;">
+                    Shared code issued to your primary health catchment area.
+                  </span>
+                </div>
+
+                <button type="submit" id="btn-submit-worker" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+                  Log In to Submit Report →
+                </button>
+              </form>
+            </div>
+
+            <!-- TAB 2: Admin / Supervisor Login Form -->
+            <div id="panel-admin" role="tabpanel" aria-labelledby="tab-btn-admin" style="display: none;">
+              <div class="login-notice" style="background: #F3F4F6; border-left-color: #4B5563; color: #1F2937;">
+                <strong>Administrative Access:</strong> Full live pressure analytics, target feasibility simulation, CSV data exports, and worker voice summaries.
+              </div>
+
+              <form id="form-admin" onsubmit="handleAdminLogin(event)">
+                <div class="form-group" style="margin-bottom: 1rem;">
+                  <label for="admin-user">Admin Username *</label>
+                  <input type="text" id="admin-user" name="username" required placeholder="e.g. admin" class="form-control" autocomplete="username">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 1.25rem;">
+                  <label for="admin-pass">Admin Password *</label>
+                  <input type="password" id="admin-pass" name="password" required placeholder="Password" class="form-control" autocomplete="current-password">
+                </div>
+
+                <button type="submit" id="btn-submit-admin" class="btn btn-primary" style="width: 100%; justify-content: center; padding: 0.75rem;">
+                  Log In as Supervisor / Admin →
+                </button>
+              </form>
+            </div>
+
+            <!-- Demo Credentials Hint Box for Judges -->
+            <div class="demo-hint-box">
+              <div class="demo-hint-title">
+                <span>🔑</span>
+                <strong>Demo Credentials (Hackathon Evaluation Only)</strong>
+              </div>
+              <div style="line-height: 1.55;">
+                <div><strong>Supervisor / Admin:</strong> User: <code>admin</code> | Pass: <code>PressureMap2026!</code></div>
+                <div style="margin-top: 0.2rem;"><strong>Worker Block Code:</strong> <code>BLOCK-ALPHA1</code> (or <code>BLOCK-ALPHA2</code>, <code>BLOCK-BETA1</code>)</div>
+                <div style="margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem;">
+                  <button type="button" class="demo-prefill-btn" onclick="prefillWorker('BLOCK-ALPHA1')">Prefill Worker Code (Alpha-1)</button>
+                  <button type="button" class="demo-prefill-btn" onclick="prefillWorker('BLOCK-ALPHA2')">Prefill Worker Code (Alpha-2)</button>
+                  <button type="button" class="demo-prefill-btn" onclick="prefillAdmin('admin', 'PressureMap2026!')">Prefill Admin Credentials</button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div><strong>Pressure Map</strong> — "Find Unfair Targets, Not Faulty Workers."</div>
+        <div style="margin-top: 0.25rem; font-size: 0.8rem; color: var(--text-subtle);">
+          Demographic cohorts under 30 individuals are strictly suppressed. Frontline workers are protected by shared block authentication.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Tab switching logic
+    function switchTab(role) {
+      const btnWorker = document.getElementById('tab-btn-worker');
+      const btnAdmin = document.getElementById('tab-btn-admin');
+      const panelWorker = document.getElementById('panel-worker');
+      const panelAdmin = document.getElementById('panel-admin');
+      const errorBox = document.getElementById('login-error');
+
+      errorBox.style.display = 'none';
+
+      if (role === 'worker') {
+        btnWorker.classList.add('active');
+        btnWorker.setAttribute('aria-selected', 'true');
+        btnAdmin.classList.remove('active');
+        btnAdmin.setAttribute('aria-selected', 'false');
+
+        panelWorker.style.display = 'block';
+        panelAdmin.style.display = 'none';
+        document.getElementById('worker-code').focus();
+      } else {
+        btnAdmin.classList.add('active');
+        btnAdmin.setAttribute('aria-selected', 'true');
+        btnWorker.classList.remove('active');
+        btnWorker.setAttribute('aria-selected', 'false');
+
+        panelAdmin.style.display = 'block';
+        panelWorker.style.display = 'none';
+        document.getElementById('admin-user').focus();
+      }
+    }
+
+    // Prefill helpers for hackathon judges
+    function prefillWorker(code) {
+      switchTab('worker');
+      const input = document.getElementById('worker-code');
+      input.value = code;
+      input.focus();
+    }
+
+    function prefillAdmin(user, pass) {
+      switchTab('admin');
+      document.getElementById('admin-user').value = user;
+      document.getElementById('admin-pass').value = pass;
+      document.getElementById('admin-pass').focus();
+    }
+
+    function showError(msg) {
+      const errBox = document.getElementById('login-error');
+      const errText = document.getElementById('login-error-text');
+      errText.textContent = msg;
+      errBox.style.display = 'block';
+    }
+
+    // Worker Login
+    async function handleWorkerLogin(e) {
+      e.preventDefault();
+      const code = document.getElementById('worker-code').value.trim();
+      if (!code) return;
+
+      const btn = document.getElementById('btn-submit-worker');
+      btn.disabled = true;
+      btn.textContent = 'Verifying Code...';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = '/worker.html';
+        } else {
+          showError(data.error || 'Invalid block access code.');
+          btn.disabled = false;
+          btn.textContent = 'Log In to Submit Report →';
+        }
+      } catch (err) {
+        showError('Network error connecting to authentication server.');
+        btn.disabled = false;
+        btn.textContent = 'Log In to Submit Report →';
+      }
+    }
+
+    // Admin Login
+    async function handleAdminLogin(e) {
+      e.preventDefault();
+      const username = document.getElementById('admin-user').value.trim();
+      const password = document.getElementById('admin-pass').value;
+      if (!username || !password) return;
+
+      const btn = document.getElementById('btn-submit-admin');
+      btn.disabled = true;
+      btn.textContent = 'Authenticating...';
+
+      try {
+        const res = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = '/index.html';
+        } else {
+          showError(data.error || 'Invalid username or password.');
+          btn.disabled = false;
+          btn.textContent = 'Log In as Supervisor / Admin →';
+        }
+      } catch (err) {
+        showError('Network error connecting to authentication server.');
+        btn.disabled = false;
+        btn.textContent = 'Log In as Supervisor / Admin →';
+      }
+    }
+
+    // Check if already authenticated on initial page load
+    document.addEventListener('DOMContentLoaded', async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.role === 'admin') {
+            window.location.href = '/index.html';
+          } else if (data.role === 'worker') {
+            window.location.href = '/worker.html';
+          }
+        }
+      } catch {
+        // Not logged in; remain on login page
+      }
+    });
+  </script>
+</body>
+</html>

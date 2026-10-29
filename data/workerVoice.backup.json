@@ -1,0 +1,60 @@
+[
+  {
+    "district": "North Highlands",
+    "block": "Block Alpha-2",
+    "month": "2026-05",
+    "totalReports": 7,
+    "issues": {
+      "Target is unrealistic": 6,
+      "Resources are short": 3,
+      "Population count looks wrong": 2
+    }
+  },
+  {
+    "district": "Coastal Delta",
+    "block": "Block Delta-2",
+    "month": "2026-05",
+    "totalReports": 6,
+    "issues": {
+      "Target is unrealistic": 5,
+      "Resources are short": 4
+    }
+  },
+  {
+    "district": "River Valley",
+    "block": "Block Gamma-3",
+    "month": "2026-05",
+    "totalReports": 5,
+    "issues": {
+      "Target is unrealistic": 5,
+      "Population count looks wrong": 3
+    }
+  },
+  {
+    "district": "Western Plains",
+    "block": "Block Beta-1",
+    "month": "2026-05",
+    "totalReports": 3,
+    "issues": {
+      "Resources are short": 2
+    }
+  },
+  {
+    "district": "North Highlands",
+    "block": "Block Alpha-1",
+    "month": "2026-05",
+    "totalReports": 2,
+    "issues": {
+      "Severe weather or geography": 1
+    }
+  },
+  {
+    "district": "North Highlands",
+    "block": "Block Alpha-4",
+    "month": "2026-05",
+    "totalReports": 5,
+    "issues": {
+      "Target is unrealistic": 5
+    }
+  }
+]

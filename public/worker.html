@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Worker Group Report – Pressure Map</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-title">
+            <h1>Pressure Map</h1>
+            <span class="badge-synthetic" title="This system operates exclusively on synthetic demonstration data.">Synthetic Demo Data</span>
+          </div>
+          <div class="tagline">Find Unfair Targets, Not Faulty Workers.</div>
+          <div class="principle-tag">Principle: Strengthen the system; protect the people in it.</div>
+        </div>
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="/index.html" class="nav-link">Admin Pressure Map</a>
+          <a href="/worker.html" class="nav-link active" aria-current="page">Worker Report Form</a>
+          <a href="/simulator.html" class="nav-link">Target Simulator</a>
+          <a href="/responsible-use.html" class="nav-link">Responsible Use</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Visible Privacy Banner -->
+  <div class="privacy-banner">
+    <div class="container">
+      <div class="privacy-banner-inner">
+        <span class="privacy-icon" aria-hidden="true">🛡️</span>
+        <span><strong>Frontline Protection Notice:</strong> Submissions are anonymous and collected strictly at the group/catchment level. No staff IDs, device tokens, or personal identifiers are stored.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Form Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <div class="form-card">
+        <div style="border-bottom: 1px solid var(--border); padding-bottom: 1rem; margin-bottom: 1.5rem;">
+          <h2 style="font-size: 1.45rem; color: var(--primary);">Submit Group Catchment Report</h2>
+          <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.25rem;">
+            Use this form to log aggregate group delivery and flag unrealistic targets or structural barriers to leadership.
+          </p>
+        </div>
+
+        <form id="worker-form" novalidate>
+
+          <!-- Group Identification -->
+          <div class="form-grid-2" style="margin-bottom: 1rem;">
+            <div class="form-group">
+              <label for="input-district">District Name *</label>
+              <input type="text" id="input-district" name="district" required placeholder="e.g., North Highlands" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="input-block">Block / Catchment Zone *</label>
+              <input type="text" id="input-block" name="block" required placeholder="e.g., Block Alpha-1" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-grid-2" style="margin-bottom: 1rem;">
+            <div class="form-group">
+              <label for="input-month">Reporting Month (YYYY-MM) *</label>
+              <input type="month" id="input-month" name="month" required class="form-control" value="2026-05">
+            </div>
+            <div class="form-group">
+              <label for="input-indicator">Health Indicator *</label>
+              <select id="input-indicator" name="indicator" class="form-control">
+                <option value="DPT3">DPT3 (Diphtheria-Pertussis-Tetanus)</option>
+                <option value="Measles-Rubella">Measles-Rubella (MR1)</option>
+                <option value="Pentavalent-3">Pentavalent-3</option>
+                <option value="Oral Polio (OPV3)">Oral Polio (OPV3)</option>
+                <option value="Vitamin A">Vitamin A Supplementation</option>
+                <option value="ANC 4+">Antenatal Care (ANC 4+)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Numbers -->
+          <div class="form-grid-2" style="margin-bottom: 1rem;">
+            <div class="form-group">
+              <label for="input-eligible">Eligible Catchment Population *</label>
+              <input type="number" id="input-eligible" name="eligible" min="1" required placeholder="Total eligible children/mothers" class="form-control">
+              <span style="font-size: 0.78rem; color: var(--text-subtle);">Groups &lt; 30 are automatically privacy-suppressed.</span>
+            </div>
+            <div class="form-group">
+              <label for="input-reported">Reported Services Delivered *</label>
+              <input type="number" id="input-reported" name="reported" min="0" required placeholder="Total doses/sessions completed" class="form-control">
+            </div>
+          </div>
+
+          <div class="form-grid-2" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
+              <label for="input-target">System Target Allocated *</label>
+              <input type="number" id="input-target" name="target" min="0" required placeholder="Assigned administrative target" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="input-avg">Historical Monthly Average</label>
+              <input type="number" id="input-avg" name="avg" min="0" placeholder="Typical 3-month baseline volume" class="form-control">
+            </div>
+          </div>
+
+          <!-- Session Delivery -->
+          <div class="form-grid-2" style="margin-bottom: 1.5rem;">
+            <div class="form-group">
+              <label for="input-planned">Sessions Planned</label>
+              <input type="number" id="input-planned" name="sessionsPlanned" min="0" placeholder="Scheduled outreach sessions" class="form-control" value="8">
+            </div>
+            <div class="form-group">
+              <label for="input-held">Sessions Held</label>
+              <input type="number" id="input-held" name="sessionsHeld" min="0" placeholder="Completed outreach sessions" class="form-control" value="8">
+            </div>
+          </div>
+
+          <!-- Problem Reporting Section -->
+          <div style="background: var(--bg-warm); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 1.25rem; margin-bottom: 1.5rem;">
+            <h3 style="font-size: 0.95rem; font-weight: 700; color: var(--primary); margin-bottom: 0.4rem;">
+              Report a System Barrier or Operational Challenge
+            </h3>
+            <p style="font-size: 0.82rem; color: var(--text-muted); margin-bottom: 0.8rem;">
+              Help administration adjust benchmarks by selecting systemic hurdles faced on the ground:
+            </p>
+
+            <div class="checkbox-group">
+              <label class="checkbox-label">
+                <input type="checkbox" name="problem" value="Target is unrealistic">
+                <span><strong>Target is unrealistic:</strong> Quota exceeds local demographic cohort or capacity.</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="problem" value="Resources are short">
+                <span><strong>Resources are short:</strong> Vaccine stock-out, cold chain failure, or transport shortage.</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="problem" value="Population count looks wrong">
+                <span><strong>Population count looks wrong:</strong> Denominator census data is outdated or inaccurate.</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" name="problem" value="Severe weather or geography">
+                <span><strong>Access barrier:</strong> Monsoons, road closures, or remote dispersed dwellings.</span>
+              </label>
+            </div>
+
+            <div class="form-group" style="margin-top: 1rem;">
+              <label for="input-notes">Additional System Notes (Optional)</label>
+              <textarea id="input-notes" name="notes" rows="2" class="form-control" placeholder="Describe systemic challenges (Do NOT include patient names or worker IDs)"></textarea>
+            </div>
+          </div>
+
+          <!-- Error Feedback Container -->
+          <div id="form-error" style="display: none; background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-border); padding: 0.85rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.88rem;"></div>
+
+          <!-- Success Feedback Container -->
+          <div id="form-success" style="display: none; background: var(--ok-bg); color: var(--ok-text); border: 1px solid var(--ok-border); padding: 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.25rem; font-size: 0.9rem;"></div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 0.75rem;">
+            <button type="reset" class="btn btn-secondary">Clear Form</button>
+            <button type="submit" id="submit-btn" class="btn btn-primary" style="padding: 0.65rem 1.5rem;">
+              Submit Anonymous Group Report
+            </button>
+          </div>
+
+        </form>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/auth.js"></script>
+  <script>
+    let currentWorkerSession = null;
+    document.addEventListener('DOMContentLoaded', async () => {
+      currentWorkerSession = await initAuth('worker');
+      if (!currentWorkerSession) return;
+
+      if (currentWorkerSession.block) {
+        const blockInput = document.getElementById('input-block');
+        blockInput.value = currentWorkerSession.block;
+        blockInput.readOnly = true;
+        blockInput.style.backgroundColor = '#F3F4F6';
+        blockInput.title = 'Assigned from your login session';
+      }
+      if (currentWorkerSession.district) {
+        const districtInput = document.getElementById('input-district');
+        districtInput.value = currentWorkerSession.district;
+        districtInput.readOnly = true;
+        districtInput.style.backgroundColor = '#F3F4F6';
+        districtInput.title = 'Assigned from your catchment area';
+      }
+    });
+
+    const form = document.getElementById('worker-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const errorEl = document.getElementById('form-error');
+    const successEl = document.getElementById('form-success');
+
+    // Forbidden PII patterns check
+    const PII_REGEX = /(name|worker|aadhaar|uid|phone|mobile|patient|beneficiary|address)/i;
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorEl.style.display = 'none';
+      successEl.style.display = 'none';
+
+      // 1. Gather Data
+      const district = document.getElementById('input-district').value.trim();
+      const block = document.getElementById('input-block').value.trim();
+      const month = document.getElementById('input-month').value.trim();
+      const indicator = document.getElementById('input-indicator').value;
+      const eligible = document.getElementById('input-eligible').value;
+      const reported = document.getElementById('input-reported').value;
+      const target = document.getElementById('input-target').value;
+      const avg = document.getElementById('input-avg').value;
+      const sessionsPlanned = document.getElementById('input-planned').value;
+      const sessionsHeld = document.getElementById('input-held').value;
+      const notes = document.getElementById('input-notes').value.trim();
+
+      // Checkboxes
+      const problemCheckboxes = Array.from(document.querySelectorAll('input[name="problem"]:checked')).map(cb => cb.value);
+
+      // 2. Client-side Privacy Validation
+      if (PII_REGEX.test(notes) && /\b\d{10,12}\b/.test(notes)) {
+        errorEl.textContent = 'Privacy Protection Triggered: Please remove any phone numbers, Aadhaar numbers, or personal worker/patient IDs from the notes field.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      if (!district || !block || !month || eligible === '' || reported === '' || target === '') {
+        errorEl.textContent = 'Please fill out all mandatory fields: District, Block, Month, Eligible, Reported, and Target.';
+        errorEl.style.display = 'block';
+        return;
+      }
+
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Submitting safely...';
+
+      try {
+        const payload = {
+          district,
+          block,
+          month,
+          indicator,
+          eligible: Number(eligible),
+          reported: Number(reported),
+          target: Number(target),
+          avg: avg !== '' ? Number(avg) : 0,
+          sessionsPlanned: sessionsPlanned !== '' ? Number(sessionsPlanned) : 0,
+          sessionsHeld: sessionsHeld !== '' ? Number(sessionsHeld) : 0,
+          problems: problemCheckboxes,
+          notes
+        };
+
+        const res = await fetch('/api/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to submit report');
+        }
+
+        // Show immediate constructive feedback
+        let analysisNote = '';
+        if (data.findings && data.findings.length > 0) {
+          analysisNote = `
+            <div style="margin-top: 0.6rem; padding: 0.6rem; background: #FFFDF5; border: 1px solid var(--amber-border); border-radius: 4px; color: var(--amber-text);">
+              <strong>System Check Finding:</strong> ${data.findings[0].explanation}<br>
+              <strong>Action:</strong> ${data.findings[0].recommendedAction}
+            </div>
+          `;
+        } else {
+          analysisNote = `
+            <div style="margin-top: 0.6rem; padding: 0.6rem; background: #DCFCE7; border: 1px solid var(--ok-border); border-radius: 4px; color: var(--ok-text);">
+              <strong>System Status: Target Feasible.</strong> Metrics are aligned within standard demographic parameters.
+            </div>
+          `;
+        }
+
+        successEl.innerHTML = `
+          <strong>✓ Group Report Successfully Recorded!</strong>
+          <p style="margin-top: 0.3rem;">Your report has been aggregated safely without any individual identifiers.</p>
+          ${analysisNote}
+          <div style="margin-top: 0.8rem;">
+            <button type="button" class="btn btn-primary" onclick="window.location.reload()" style="font-size: 0.82rem; padding: 0.4rem 0.8rem;">Submit Another Report</button>
+          </div>
+        `;
+        successEl.style.display = 'block';
+        form.reset();
+        if (currentWorkerSession) {
+          if (currentWorkerSession.block) document.getElementById('input-block').value = currentWorkerSession.block;
+          if (currentWorkerSession.district) document.getElementById('input-district').value = currentWorkerSession.district;
+        }
+        document.getElementById('input-month').value = '2026-05';
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.style.display = 'block';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Submit Anonymous Group Report';
+      }
+    });
+  </script>
+</body>
+</html>

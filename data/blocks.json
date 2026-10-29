@@ -1,0 +1,25 @@
+[
+  { "district": "North Highlands", "block": "Block Alpha-1", "lat": 24.35, "lng": 77.18 },
+  { "district": "North Highlands", "block": "Block Alpha-2", "lat": 24.42, "lng": 77.28 },
+  { "district": "North Highlands", "block": "Block Alpha-3", "lat": 24.30, "lng": 77.35 },
+  { "district": "North Highlands", "block": "Block Alpha-4", "lat": 24.48, "lng": 77.12 },
+  { "district": "North Highlands", "block": "Block Alpha-5", "lat": 24.25, "lng": 77.22 },
+
+  { "district": "Western Plains", "block": "Block Beta-1", "lat": 23.82, "lng": 76.45 },
+  { "district": "Western Plains", "block": "Block Beta-2", "lat": 23.90, "lng": 76.58 },
+  { "district": "Western Plains", "block": "Block Beta-3", "lat": 23.75, "lng": 76.38 },
+  { "district": "Western Plains", "block": "Block Beta-4", "lat": 23.85, "lng": 76.70 },
+  { "district": "Western Plains", "block": "Block Beta-5", "lat": 23.68, "lng": 76.52 },
+
+  { "district": "River Valley", "block": "Block Gamma-1", "lat": 23.55, "lng": 77.48 },
+  { "district": "River Valley", "block": "Block Gamma-2", "lat": 23.62, "lng": 77.62 },
+  { "district": "River Valley", "block": "Block Gamma-3", "lat": 23.48, "lng": 77.38 },
+  { "district": "River Valley", "block": "Block Gamma-4", "lat": 23.70, "lng": 77.55 },
+  { "district": "River Valley", "block": "Block Gamma-5", "lat": 23.42, "lng": 77.70 },
+
+  { "district": "Coastal Delta", "block": "Block Delta-1", "lat": 23.05, "lng": 78.15 },
+  { "district": "Coastal Delta", "block": "Block Delta-2", "lat": 23.15, "lng": 78.28 },
+  { "district": "Coastal Delta", "block": "Block Delta-3", "lat": 22.95, "lng": 78.08 },
+  { "district": "Coastal Delta", "block": "Block Delta-4", "lat": 23.22, "lng": 78.35 },
+  { "district": "Coastal Delta", "block": "Block Delta-5", "lat": 22.88, "lng": 78.22 }
+]

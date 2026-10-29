@@ -1,0 +1,22 @@
+[
+  { "code": "BLOCK-ALPHA1", "block": "Block Alpha-1", "district": "North Highlands" },
+  { "code": "BLOCK-ALPHA2", "block": "Block Alpha-2", "district": "North Highlands" },
+  { "code": "BLOCK-ALPHA3", "block": "Block Alpha-3", "district": "North Highlands" },
+  { "code": "BLOCK-ALPHA4", "block": "Block Alpha-4", "district": "North Highlands" },
+  { "code": "BLOCK-ALPHA5", "block": "Block Alpha-5", "district": "North Highlands" },
+  { "code": "BLOCK-BETA1", "block": "Block Beta-1", "district": "Western Plains" },
+  { "code": "BLOCK-BETA2", "block": "Block Beta-2", "district": "Western Plains" },
+  { "code": "BLOCK-BETA3", "block": "Block Beta-3", "district": "Western Plains" },
+  { "code": "BLOCK-BETA4", "block": "Block Beta-4", "district": "Western Plains" },
+  { "code": "BLOCK-BETA5", "block": "Block Beta-5", "district": "Western Plains" },
+  { "code": "BLOCK-GAMMA1", "block": "Block Gamma-1", "district": "River Valley" },
+  { "code": "BLOCK-GAMMA2", "block": "Block Gamma-2", "district": "River Valley" },
+  { "code": "BLOCK-GAMMA3", "block": "Block Gamma-3", "district": "River Valley" },
+  { "code": "BLOCK-GAMMA4", "block": "Block Gamma-4", "district": "River Valley" },
+  { "code": "BLOCK-GAMMA5", "block": "Block Gamma-5", "district": "River Valley" },
+  { "code": "BLOCK-DELTA1", "block": "Block Delta-1", "district": "Coastal Delta" },
+  { "code": "BLOCK-DELTA2", "block": "Block Delta-2", "district": "Coastal Delta" },
+  { "code": "BLOCK-DELTA3", "block": "Block Delta-3", "district": "Coastal Delta" },
+  { "code": "BLOCK-DELTA4", "block": "Block Delta-4", "district": "Coastal Delta" },
+  { "code": "BLOCK-DELTA5", "block": "Block Delta-5", "district": "Coastal Delta" }
+]

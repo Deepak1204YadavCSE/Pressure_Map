@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pressure Map – System Health Reporting Checker</title>
+  <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/vendor/leaflet.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-title">
+            <h1>Pressure Map</h1>
+            <span class="badge-synthetic" title="This system operates exclusively on synthetic demonstration data.">Synthetic Demo Data</span>
+          </div>
+          <div class="tagline">Find Unfair Targets, Not Faulty Workers.</div>
+          <div class="principle-tag">Principle: Strengthen the system; protect the people in it.</div>
+        </div>
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="/index.html" class="nav-link active" aria-current="page">Admin Pressure Map</a>
+          <a href="/worker.html" class="nav-link">Worker Report Form</a>
+          <a href="/simulator.html" class="nav-link">Target Simulator</a>
+          <a href="/responsible-use.html" class="nav-link">Responsible Use</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Visible Privacy Banner -->
+  <div class="privacy-banner">
+    <div class="container">
+      <div class="privacy-banner-inner">
+        <span class="privacy-icon" aria-hidden="true">🛡️</span>
+        <span><strong>Privacy Guarantee:</strong> Group-level metrics only. Zero individual or worker tracking. Small groups (&lt; 30 eligible individuals) are strictly excluded from KPI counts, charts, maps, and CSV exports to protect anonymity.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <!-- Section Header & Actions -->
+      <div class="section-header">
+        <div>
+          <h2>System Performance &amp; Feasibility Overview</h2>
+          <div class="section-subtitle">Real-time demographic analysis to identify structural bottlenecks and unachievable quotas.</div>
+        </div>
+        <div class="btn-group">
+          <button id="btn-load-demo" class="btn btn-secondary" title="Restore original synthetic demonstration records">
+            ↻ Load Demo Data
+          </button>
+          <button id="btn-upload-csv" class="btn btn-outline-primary" title="Upload or paste group reporting CSV records">
+            ↑ Upload CSV
+          </button>
+          <button id="btn-export-csv" class="btn btn-primary" title="Export privacy-safe findings as CSV (suppressed groups excluded)">
+            ↓ Export CSV
+          </button>
+        </div>
+      </div>
+
+      <!-- KPI Cards -->
+      <section class="kpi-grid" aria-label="Key Performance Indicators">
+        <div class="kpi-card">
+          <span class="kpi-title">Groups Reviewed</span>
+          <span id="kpi-reviewed" class="kpi-value">—</span>
+          <span class="kpi-desc">Eligible group records (&ge; 30 cohort)</span>
+        </div>
+        <div class="kpi-card kpi-amber">
+          <span class="kpi-title">Needing Review</span>
+          <span id="kpi-review-needed" class="kpi-value">—</span>
+          <span class="kpi-desc">Volume spikes or contextual delivery gaps</span>
+        </div>
+        <div class="kpi-card kpi-amber">
+          <span class="kpi-title">Unfair Targets</span>
+          <span id="kpi-unfair" class="kpi-value">—</span>
+          <span class="kpi-desc">Target exceeds group eligible cohort</span>
+        </div>
+        <div class="kpi-card kpi-red">
+          <span class="kpi-title">Data Errors</span>
+          <span id="kpi-errors" class="kpi-value">—</span>
+          <span class="kpi-desc">Reported exceeds eligible or malformed</span>
+        </div>
+        <div class="kpi-card kpi-privacy">
+          <span class="kpi-title">Privacy Suppressed</span>
+          <span id="kpi-suppressed" class="kpi-value">—</span>
+          <span class="kpi-desc">Small groups (&lt; 30) isolated for privacy</span>
+        </div>
+      </section>
+
+      <!-- Filters Row (One responsive row on desktop, stacked on mobile) -->
+      <section class="filter-card" aria-label="Filter records">
+        <div class="filter-row">
+          <div class="form-group">
+            <label for="filter-district">District</label>
+            <select id="filter-district" class="form-control">
+              <option value="All">All Districts</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filter-block">Block</label>
+            <select id="filter-block" class="form-control">
+              <option value="All">All Blocks</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filter-month">Reporting Month</label>
+            <select id="filter-month" class="form-control">
+              <option value="All">All Months</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="filter-status">Status / Rule Severity</label>
+            <select id="filter-status" class="form-control">
+              <option value="All">All Statuses</option>
+              <option value="ok">Target Feasible (OK)</option>
+              <option value="feasibility">Unfair Target</option>
+              <option value="review">Needs Review</option>
+              <option value="inconclusive">Inconclusive</option>
+              <option value="error">Data Error</option>
+            </select>
+          </div>
+          <div style="flex: 0 0 auto;">
+            <button id="filter-reset-btn" class="btn btn-secondary" style="height: 38px;">Reset Filters</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Visuals Grid: District Stacked Bar Chart & Block-wise Pressure Map -->
+      <section class="visuals-grid" aria-label="Visual Overview and Geographic Map">
+
+        <!-- District Stacked Bar Chart Card -->
+        <div class="visual-card" id="chart-card">
+          <div class="visual-header">
+            <div>
+              <h3 class="visual-title">District Overview</h3>
+              <div class="visual-subtitle">Visible groups by system status (suppressed groups excluded)</div>
+            </div>
+            <span class="badge-tag" title="Clicking any bar filters the table to that district">Click bar to filter</span>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="district-chart" aria-label="District-wise Stacked Status Chart" role="img"></canvas>
+            <div id="chart-empty-state" class="visual-empty-state" style="display: none;">
+              No data to display
+            </div>
+          </div>
+          <div id="chart-summary-text" class="visual-summary-text" aria-live="polite">
+            Loading district overview...
+          </div>
+        </div>
+
+        <!-- Block-wise Pressure Map Card -->
+        <div class="visual-card" id="map-card">
+          <div class="visual-header">
+            <div>
+              <h3 class="visual-title">Block Pressure Map</h3>
+              <div class="visual-subtitle">Worst block status for period &bull; <span style="color: var(--text-subtle);">Map positions are illustrative. All data is synthetic.</span></div>
+            </div>
+            <div class="map-legend">
+              <span class="legend-item"><span class="legend-badge marker-red">✕</span> Error</span>
+              <span class="legend-item"><span class="legend-badge marker-amber">!</span> Review / Target</span>
+              <span class="legend-item"><span class="legend-badge marker-green">✓</span> OK</span>
+              <span class="legend-item"><span class="legend-badge marker-grey">–</span> Suppressed</span>
+            </div>
+          </div>
+          <div id="pressure-map" class="map-container" role="application" aria-label="Interactive Block Pressure Map"></div>
+          <div class="map-footer-note">
+            Map positions are illustrative. All data is synthetic. &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a> contributors
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Worker Voice Panel (Anonymous, Group-Level) -->
+      <section class="card visual-card" style="margin-bottom: 2rem;" aria-label="Worker Voice Feedback">
+        <div class="visual-header">
+          <div>
+            <h3 class="visual-title">Worker Voice (anonymous, group-level)</h3>
+            <div class="visual-subtitle">Frontline reports of system and target bottlenecks. Anonymity rule: &ge; 5 submissions required per block; suppressed groups (&lt; 30) omitted.</div>
+          </div>
+          <span class="badge-tag">Group Aggregates</span>
+        </div>
+        <div id="worker-voice-list" class="worker-voice-grid">
+          <div style="font-size: 0.88rem; color: var(--text-muted); font-style: italic;">Loading worker voice feedback...</div>
+        </div>
+      </section>
+
+      <!-- Table Section -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem;">
+        <span id="table-count" style="font-size: 0.88rem; color: var(--text-muted); font-weight: 500;">Loading records...</span>
+        <span style="font-size: 0.82rem; color: var(--text-subtle);">Click any row to open the system analysis panel</span>
+      </div>
+
+      <div class="table-container">
+        <table class="pressure-table" aria-label="Health Reporting Records">
+          <thead>
+            <tr>
+              <th scope="col">District</th>
+              <th scope="col">Block</th>
+              <th scope="col">Month</th>
+              <th scope="col">Indicator</th>
+              <th scope="col">Eligible</th>
+              <th scope="col">Reported</th>
+              <th scope="col">Target</th>
+              <th scope="col">Hist. Avg</th>
+              <th scope="col">Sessions (Held/Plan)</th>
+              <th scope="col">System Status</th>
+            </tr>
+          </thead>
+          <tbody id="table-body">
+            <tr>
+              <td colspan="10" style="text-align: center; padding: 2rem;">Loading live reporting data...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Slide-Out Details Drawer -->
+  <div id="details-backdrop" class="details-backdrop"></div>
+  <aside id="details-panel" class="details-panel" aria-label="Record Details Drawer" role="dialog" aria-modal="true">
+    <div class="details-header">
+      <div>
+        <h3 id="detail-title">Group Record Analysis</h3>
+        <div style="margin-top: 0.4rem;">
+          <span id="detail-status" class="status-badge">—</span>
+        </div>
+      </div>
+      <button id="details-close-btn" class="details-close-btn" aria-label="Close details drawer">&times;</button>
+    </div>
+
+    <div class="details-body">
+      <!-- Cohort Numbers Section -->
+      <section class="detail-section">
+        <h4>Group Baseline Data</h4>
+        <div id="detail-metrics"></div>
+      </section>
+
+      <!-- Mathematical Analysis Section -->
+      <section class="detail-section">
+        <h4>Formula &amp; Numerical Breakdown</h4>
+        <pre id="detail-formula" class="formula-box"></pre>
+      </section>
+
+      <!-- Suggested Fair Target Section (for unfair targets) -->
+      <div id="detail-suggested-target-container"></div>
+
+      <!-- System Explanation Section -->
+      <section class="detail-section">
+        <h4>Systemic Explanation</h4>
+        <p id="detail-explanation" class="explanation-text"></p>
+        <div id="detail-worker-voice"></div>
+      </section>
+
+      <!-- Plausible Alternatives Section -->
+      <section class="detail-section">
+        <h4>Plausible Contextual Factors</h4>
+        <ul id="detail-alternatives" class="alternatives-list"></ul>
+      </section>
+
+      <!-- Recommended System Action -->
+      <section class="detail-section">
+        <h4>Recommended System Action</h4>
+        <div id="detail-action" class="action-box"></div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- Upload CSV Modal -->
+  <div id="upload-modal" class="modal-backdrop">
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal-header">
+        <h3 id="modal-title">Upload Group Reporting CSV</h3>
+        <button id="upload-close-btn" style="background: none; border: none; color: #fff; font-size: 1.4rem; cursor: pointer;">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="font-size: 0.88rem; color: var(--text-muted);">
+          Submit group totals only. Disallowed identifier fields (names, Aadhaar, worker IDs, phone numbers) will be automatically detected and rejected by the privacy checker.
+        </div>
+
+        <div class="form-group">
+          <label for="csv-file-input">Choose CSV File</label>
+          <input type="file" id="csv-file-input" accept=".csv,text/csv" class="form-control">
+        </div>
+
+        <div class="form-group">
+          <label for="csv-paste-input">Or Paste CSV Content</label>
+          <textarea id="csv-paste-input" rows="4" class="form-control" placeholder="district,block,month,indicator,eligible,reported,target,avg,sessionsPlanned,sessionsHeld&#10;North Highlands,Block Alpha-1,2026-05,DPT3,100,85,90,80,6,6"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label for="upload-mode">Ingestion Mode</label>
+          <select id="upload-mode" class="form-control">
+            <option value="append">Append to existing records</option>
+            <option value="replace">Replace existing records</option>
+          </select>
+        </div>
+
+        <div id="upload-feedback"></div>
+      </div>
+      <div class="modal-footer">
+        <button id="upload-cancel-btn" class="btn btn-secondary">Cancel</button>
+        <button id="upload-submit-btn" class="btn btn-primary">Process &amp; Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vendor Scripts (Local with CDN fallback) -->
+  <script src="/vendor/chart.umd.js"></script>
+  <script>
+    if (typeof Chart === 'undefined') {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"><\\/script>');
+    }
+  </script>
+
+  <script src="/vendor/leaflet.js"></script>
+  <script>
+    if (typeof L === 'undefined') {
+      document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\\/script>');
+    }
+  </script>
+
+  <!-- Application Script -->
+  <script src="/auth.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

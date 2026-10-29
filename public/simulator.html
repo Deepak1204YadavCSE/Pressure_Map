@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Target Feasibility Simulator – Pressure Map</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+  <!-- Site Header -->
+  <header class="site-header">
+    <div class="container">
+      <div class="header-inner">
+        <div class="brand">
+          <div class="brand-title">
+            <h1>Pressure Map</h1>
+            <span class="badge-synthetic" title="This system operates exclusively on synthetic demonstration data.">Synthetic Demo Data</span>
+          </div>
+          <div class="tagline">Find Unfair Targets, Not Faulty Workers.</div>
+          <div class="principle-tag">Principle: Strengthen the system; protect the people in it.</div>
+        </div>
+        <nav class="site-nav" aria-label="Main Navigation">
+          <a href="/index.html" class="nav-link">Admin Pressure Map</a>
+          <a href="/worker.html" class="nav-link">Worker Report Form</a>
+          <a href="/simulator.html" class="nav-link active" aria-current="page">Target Simulator</a>
+          <a href="/responsible-use.html" class="nav-link">Responsible Use</a>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Visible Simulation Notice -->
+  <div class="privacy-banner">
+    <div class="container">
+      <div class="privacy-banner-inner">
+        <span class="privacy-icon" aria-hidden="true">💡</span>
+        <span><strong>Exploratory Sandbox Notice:</strong> This simulator operates entirely in local memory. Testing hypothetical targets does NOT modify or overwrite any saved records.</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+
+      <div class="section-header">
+        <div>
+          <h2>Target Feasibility &amp; Pressure Simulator</h2>
+          <div class="section-subtitle">Model proposed health delivery targets against demographic baselines before issuing administrative directives.</div>
+        </div>
+        <div>
+          <button id="sim-reset-btn" class="btn btn-secondary">↺ Reset Simulation</button>
+        </div>
+      </div>
+
+      <div class="sim-grid">
+
+        <!-- Input & Controls Card -->
+        <section class="sim-card" aria-label="Simulator Parameters">
+          <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 1rem;">1. Select Catchment Baseline</h3>
+
+          <div class="form-group" style="margin-bottom: 1.25rem;">
+            <label for="sim-block-select">Choose Catchment Block</label>
+            <select id="sim-block-select" class="form-control">
+              <option value="">Loading blocks from current data...</option>
+            </select>
+          </div>
+
+          <!-- Baseline Display -->
+          <div style="background: var(--bg-warm); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 1rem; margin-bottom: 1rem; font-size: 0.88rem;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+              <div><strong>District:</strong> <span id="base-district">—</span></div>
+              <div><strong>Indicator:</strong> <span id="base-indicator">—</span></div>
+              <div><strong>Eligible Population:</strong> <span id="base-eligible" style="font-weight: 700; color: var(--primary);">—</span></div>
+              <div><strong>Historical 3-Mo Avg:</strong> <span id="base-avg" style="font-weight: 700;">—</span></div>
+            </div>
+          </div>
+
+          <!-- Suggested Fair Target Box -->
+          <div id="sim-suggested-box" style="background: #E8F3EE; border: 1px solid var(--primary-border); border-radius: var(--radius-sm); padding: 0.85rem; margin-bottom: 1.5rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+              <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary);">Suggested Fair Target Range:</span>
+              <span id="sim-suggested-range" style="font-weight: 800; color: var(--primary); font-family: var(--font-mono); font-size: 0.95rem;">—</span>
+            </div>
+            <div style="font-size: 0.78rem; color: var(--primary); font-style: italic;">
+              A starting point for review, not an order. Check sessions, staff and local context.
+            </div>
+          </div>
+
+          <h3 style="font-size: 1.15rem; color: var(--primary); margin-bottom: 0.5rem;">2. Adjust Hypothetical Target</h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">Slide or type a proposed target to assess physical and operational feasibility:</p>
+
+          <div class="slider-container">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <label for="sim-target-slider" style="font-size: 0.85rem; font-weight: 600;">Hypothetical Target</label>
+              <input type="number" id="sim-target-number" min="0" max="300" class="form-control" style="width: 90px; text-align: center; font-weight: 700; font-size: 1rem;">
+            </div>
+            <input type="range" id="sim-target-slider" min="0" max="250" value="100">
+            <div style="display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-subtle);">
+              <span>0 (No quota)</span>
+              <span id="slider-mid">100% Eligible</span>
+              <span id="slider-max">200% Eligible</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Live Impact Card -->
+        <section class="sim-card" aria-label="Feasibility Analysis Output">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <h3 style="font-size: 1.15rem; color: var(--primary);">3. Live Target Assessment</h3>
+            <span id="sim-status-badge" class="status-badge status-ok">✓ Within eligible population</span>
+          </div>
+          <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem; font-style: italic;">
+            Capacity and resources (sessions, staff) are not assessed here.
+          </div>
+
+          <div class="sim-metric">
+            <span>Target / Eligible Population Ratio</span>
+            <span id="sim-ratio" class="sim-metric-val">100%</span>
+          </div>
+
+          <div class="sim-metric">
+            <span>Difference vs Eligible Cohort</span>
+            <span id="sim-diff-eligible" class="sim-metric-val">0</span>
+          </div>
+
+          <div class="sim-metric">
+            <span>Difference vs Historical Baseline Average</span>
+            <span id="sim-diff-avg" class="sim-metric-val">0</span>
+          </div>
+
+          <!-- Live Explanation -->
+          <div style="margin-top: 1.25rem;">
+            <h4 style="font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 0.4rem; font-weight: 700;">
+              Feasibility Explanation
+            </h4>
+            <p id="sim-explanation" style="font-size: 0.9rem; line-height: 1.5; color: var(--text-main);">
+              Calculating target feasibility...
+            </p>
+          </div>
+
+          <!-- Essential Caveat Box (Mandatory Requirement) -->
+          <div class="caveat-box">
+            <strong>Operational Capacity Caveat:</strong><br>
+            A target is never feasible from demographic population alone. Even if a target does not exceed the census denominator, local feasibility depends fundamentally on cold chain refrigeration capacity, transport availability, syringe/vial inventory, session scheduling, and frontline health worker staffing ratios.
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+  </main>
+
+  <script src="/auth.js"></script>
+  <script>
+    let blocksData = [];
+    let currentSelected = null;
+    let originalTarget = 100;
+
+    const blockSelect = document.getElementById('sim-block-select');
+    const baseDistrictEl = document.getElementById('base-district');
+    const baseIndicatorEl = document.getElementById('base-indicator');
+    const baseEligibleEl = document.getElementById('base-eligible');
+    const baseAvgEl = document.getElementById('base-avg');
+
+    const targetSlider = document.getElementById('sim-target-slider');
+    const targetNumber = document.getElementById('sim-target-number');
+    const sliderMid = document.getElementById('slider-mid');
+    const sliderMax = document.getElementById('slider-max');
+
+    const statusBadge = document.getElementById('sim-status-badge');
+    const ratioEl = document.getElementById('sim-ratio');
+    const diffEligibleEl = document.getElementById('sim-diff-eligible');
+    const diffAvgEl = document.getElementById('sim-diff-avg');
+    const explanationEl = document.getElementById('sim-explanation');
+    const resetBtn = document.getElementById('sim-reset-btn');
+
+    async function loadSimulatorData() {
+      try {
+        const res = await fetch('/api/findings');
+        const data = await res.json();
+        
+        // Filter valid blocks with known eligible > 0
+        blocksData = data.results
+          .map(item => item.row)
+          .filter(r => r.eligible && r.eligible !== 'Suppressed (small group)' && Number(r.eligible) > 0);
+
+        blockSelect.innerHTML = '';
+        blocksData.forEach((row, i) => {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = `${row.district} — ${row.block} (${row.indicator || 'General'})`;
+          blockSelect.appendChild(opt);
+        });
+
+        // Check URL query parameters for prefilled block & target
+        const urlParams = new URLSearchParams(window.location.search);
+        const paramBlock = urlParams.get('block');
+        const paramTarget = urlParams.get('target');
+
+        let targetIndex = 0;
+        if (paramBlock) {
+          const foundIdx = blocksData.findIndex(b => b.block === paramBlock);
+          if (foundIdx >= 0) targetIndex = foundIdx;
+        }
+
+        if (blocksData.length > 0) {
+          blockSelect.value = targetIndex;
+          selectBlock(targetIndex);
+
+          if (paramTarget && !Number.isNaN(Number(paramTarget))) {
+            const numVal = Number(paramTarget);
+            targetSlider.value = numVal;
+            targetNumber.value = numVal;
+            recalculate();
+          }
+        } else {
+          // Fallback demo preset
+          const fallback = { district: 'Demo District', block: 'Demo Block Alpha', indicator: 'DPT3', eligible: 100, target: 90, avg: 85 };
+          blocksData = [fallback];
+          selectBlock(0);
+        }
+      } catch (err) {
+        console.error('Error loading simulator data:', err);
+      }
+    }
+
+    function selectBlock(index) {
+      currentSelected = blocksData[index];
+      if (!currentSelected) return;
+
+      const eligible = Number(currentSelected.eligible) || 100;
+      const avg = Number(currentSelected.avg) || Math.round(eligible * 0.8);
+      const target = Number(currentSelected.target) || eligible;
+      originalTarget = target;
+
+      baseDistrictEl.textContent = currentSelected.district;
+      baseIndicatorEl.textContent = currentSelected.indicator || 'DPT3';
+      baseEligibleEl.textContent = eligible;
+      baseAvgEl.textContent = avg;
+
+      // Update Suggested Fair Target Range (low = avg, high = 90% eligible)
+      const suggestedEl = document.getElementById('sim-suggested-range');
+      if (eligible > 0 && avg > 0) {
+        const low = Math.round(avg);
+        const high = Math.round(0.9 * eligible);
+        if (low <= high) {
+          suggestedEl.textContent = `${low} – ${high}`;
+        } else {
+          suggestedEl.textContent = 'Inconclusive (baseline review required)';
+        }
+      } else {
+        suggestedEl.textContent = 'Inconclusive (eligible or avg missing)';
+      }
+
+      // Configure slider bounds
+      const maxBound = Math.max(Math.round(eligible * 2), 200);
+      targetSlider.max = maxBound;
+      targetNumber.max = maxBound;
+      sliderMid.textContent = `${eligible} (100%)`;
+      sliderMax.textContent = `${maxBound} (${Math.round((maxBound/eligible)*100)}%)`;
+
+      // Set initial values
+      targetSlider.value = target;
+      targetNumber.value = target;
+
+      recalculate();
+    }
+
+    function recalculate() {
+      if (!currentSelected) return;
+
+      const hypotheticalTarget = Number(targetNumber.value) || 0;
+      const eligible = Number(currentSelected.eligible) || 0;
+      const avg = Number(currentSelected.avg) || 0;
+
+      // Check Inconclusive
+      if (eligible <= 0) {
+        statusBadge.className = 'status-badge status-inconclusive';
+        statusBadge.innerHTML = '? Inconclusive';
+        ratioEl.textContent = 'Inconclusive';
+        diffEligibleEl.textContent = '—';
+        diffAvgEl.textContent = '—';
+        explanationEl.textContent = 'Eligible demographic population count is missing or zero. Feasibility cannot be determined without a denominator baseline.';
+        return;
+      }
+
+      // Calculations
+      const ratio = Math.round((hypotheticalTarget / eligible) * 100);
+      const diffEligible = hypotheticalTarget - eligible;
+      const diffAvg = avg > 0 ? hypotheticalTarget - avg : 0;
+      const avgGrowthPct = avg > 0 ? Math.round(((hypotheticalTarget - avg) / avg) * 100) : 0;
+
+      ratioEl.textContent = `${ratio}%`;
+      diffEligibleEl.textContent = diffEligible >= 0 ? `+${diffEligible}` : `${diffEligible}`;
+      diffAvgEl.textContent = diffAvg >= 0 ? `+${diffAvg} (+${avgGrowthPct}%)` : `${diffAvg} (${avgGrowthPct}%)`;
+
+      // Status Assessment
+      if (hypotheticalTarget > eligible) {
+        // UNFAIR / INFEASIBLE TARGET
+        statusBadge.className = 'status-badge status-feasibility';
+        statusBadge.innerHTML = '▲ Unfair Target';
+        explanationEl.innerHTML = `
+          <strong>Exceeds Demographic Baseline:</strong> Proposed target of <strong>${hypotheticalTarget}</strong> exceeds the total available eligible cohort of <strong>${eligible}</strong> by <strong>+${diffEligible}</strong> individuals (${ratio}% of cohort). 
+          Setting a target above 100% of the demographic cohort creates artificial system pressure and penalizes workers for population ceilings beyond their control.
+        `;
+      } else if (avg > 0 && avgGrowthPct > 50) {
+        // OPERATIONAL STRAIN REVIEW
+        statusBadge.className = 'status-badge status-review';
+        statusBadge.innerHTML = '! Needs review';
+        explanationEl.innerHTML = `
+          <strong>Needs Review:</strong> Target represents a <strong>+${avgGrowthPct}% surge</strong> above recent historical delivery (${avg}). 
+          While mathematically below the total population (${ratio}%), a sudden surge of this magnitude requires verifying cold chain capacity, session schedules, and staffing. Capacity and resources (sessions, staff) are not assessed here.
+        `;
+      } else {
+        // WITHIN ELIGIBLE POPULATION
+        statusBadge.className = 'status-badge status-ok';
+        statusBadge.innerHTML = '✓ Within eligible population';
+        explanationEl.innerHTML = `
+          <strong>Within Eligible Population:</strong> Target represents <strong>${ratio}%</strong> of the recorded eligible cohort (${hypotheticalTarget}/${eligible}). 
+          Note: This assessment only checks demographic denominator bounds. Capacity and resources (sessions, staff) are not assessed here.
+        `;
+      }
+    }
+
+    // Sync Slider & Number
+    targetSlider.addEventListener('input', (e) => {
+      targetNumber.value = e.target.value;
+      recalculate();
+    });
+
+    targetNumber.addEventListener('input', (e) => {
+      targetSlider.value = e.target.value;
+      recalculate();
+    });
+
+    blockSelect.addEventListener('change', (e) => {
+      selectBlock(Number(e.target.value));
+    });
+
+    resetBtn.addEventListener('click', () => {
+      if (currentSelected) {
+        targetSlider.value = originalTarget;
+        targetNumber.value = originalTarget;
+        recalculate();
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      const session = await initAuth('admin');
+      if (!session) return;
+      loadSimulatorData();
+    });
+  </script>
+</body>
+</html>
